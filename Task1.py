@@ -34,18 +34,27 @@ if __name__ == "__main__":
     hadoopConf.set("fs.s3a.secret.key", s3_secret_access_key)
     hadoopConf.set("fs.s3a.path.style.access", "true")
     hadoopConf.set("fs.s3a.connection.ssl.enabled", "false")
-    def get_join_key(element):
-        return element[2]
-    rideshare_data = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv") # /read from the bucket file
-    taxi_zone_lookup_df = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv") # /read from the bucket file
-    # First join
-    join_df = rideshare_data.join(taxi_zone_lookup_df, on = 'pickup_location')
-    # Renaming columns of pickup details
-    join_df = join_df.withColumnRenamed({'Borough': 'Pickup_Borough', 'Zone':'Pickup_Zone','service_zone': 'Pickup_service_zone'})
-    # Second join
-    join_df = join_df.join(taxi_zone_lookup_df, on = 'dropoff_location')
-    # Renaming columns of droppoff details
-    join_df = join_df.withColumnRenamed({'Borough': 'Dropoff_Borough', 'Zone':'Dropoff_Zone','service_zone': 'Dropoff_service_zone'})
+    # TASK 1
+    # a
+    # Loading data
+    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
+    taxi_zone_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv", header=True)
+    
+    # doing the first join on pickup location
+    join_df = rideshare_df.join(taxi_zone_df, rideshare_df.pickup_location==taxi_zone_df.LocationID, 'inner')
+    join_df = join_df.drop('LocationID')
+    join_df = join_df.withColumnRenamed('Borough', 'Pickup_Borough')
+    join_df = join_df.withColumnRenamed('Zone', 'Pickup_Zone')
+    join_df = join_df.withColumnRenamed('service_zone', 'Pickup_service_zone')
+
+    # doing the second join on dropoff location
+    join_df = rideshare_df.join(taxi_zone_df, rideshare_df.dropoff_location==taxi_zone_df.LocationID, 'inner')
+    join_df = join_df.drop('LocationID')
+    join_df = join_df.withColumnRenamed('Borough', 'Dropoff_Borough')
+    join_df = join_df.withColumnRenamed('Zone', 'Dropoff_Zone')
+    join_df = join_df.withColumnRenamed('service_zone', 'Dropoff_service_zone')
+    
+    join_df.show()
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
