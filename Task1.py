@@ -35,11 +35,15 @@ if __name__ == "__main__":
     hadoopConf.set("fs.s3a.path.style.access", "true")
     hadoopConf.set("fs.s3a.connection.ssl.enabled", "false")
     def get_join_key(element):
-        return element[1]
+        return element[2]
     rideshare_data = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv") # /read from the bucket file
     taxi_zone_lookup_df = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv") # /read from the bucket file
-    rideshare_key = rideshare_data.map(get_join_key)
-    joined_df = rideshare_key.join(taxi_zone_lookup_df)
+    # rideshare_key = rideshare_data.map(get_join_key)
+    # taxi_key  = taxi_zone_lookup_df.map(get_join_key)
+    join_df = rideshare_data.join(taxi_zone_lookup_df, on = 'pickup_location')
+    join_df = join_df.withColumnRenamed({'LocationID': 'Pickip_Borough', 'Borough': 'Pichup_Zone', 'service_zone', 'Pichip_service_zone'})
+    join_df = join_df.join(taxi_zone_lookup_df, on = 'dropoff_location')
+    join_df = join_df.withColumnRenamed({'LocationID': 'Pickup_Borough', 'Borough': 'Pichup_Zone', 'service_zone', 'Dropoff_service_zone_service_zone'})
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -47,7 +51,7 @@ if __name__ == "__main__":
             aws_secret_access_key=s3_secret_access_key)
 
     my_result_object = my_bucket_resource.Object(s3_bucket,'taskone/b.txt')
-    my_result_object.put(Body=json.dumps(joined_df.collect()))
+    my_result_object.put(Body=json.dumps(join_df.collect()))
 
 
 
