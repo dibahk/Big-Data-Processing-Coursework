@@ -38,12 +38,14 @@ if __name__ == "__main__":
         return element[2]
     rideshare_data = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv") # /read from the bucket file
     taxi_zone_lookup_df = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv") # /read from the bucket file
-    # rideshare_key = rideshare_data.map(get_join_key)
-    # taxi_key  = taxi_zone_lookup_df.map(get_join_key)
+    # First join
     join_df = rideshare_data.join(taxi_zone_lookup_df, on = 'pickup_location')
-    join_df = join_df.withColumnRenamed({'LocationID': 'Pickip_Borough', 'Borough': 'Pichup_Zone', 'service_zone', 'Pichip_service_zone'})
+    # Renaming columns of pickup details
+    join_df = join_df.withColumnRenamed({'Borough': 'Pickup_Borough', 'Zone':'Pickup_Zone','service_zone': 'Pickup_service_zone'})
+    # Second join
     join_df = join_df.join(taxi_zone_lookup_df, on = 'dropoff_location')
-    join_df = join_df.withColumnRenamed({'LocationID': 'Pickup_Borough', 'Borough': 'Pichup_Zone', 'service_zone', 'Dropoff_service_zone_service_zone'})
+    # Renaming columns of droppoff details
+    join_df = join_df.withColumnRenamed({'Borough': 'Dropoff_Borough', 'Zone':'Dropoff_Zone','service_zone': 'Dropoff_service_zone'})
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
