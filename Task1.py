@@ -34,10 +34,20 @@ if __name__ == "__main__":
     hadoopConf.set("fs.s3a.secret.key", s3_secret_access_key)
     hadoopConf.set("fs.s3a.path.style.access", "true")
     hadoopConf.set("fs.s3a.connection.ssl.enabled", "false")
-
+    def get_join_key(element):
+        return element[1]
     rideshare_data = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv") # /read from the bucket file
     taxi_zone_lookup_df = spark.sparkContext.textFile("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv") # /read from the bucket file
-    print(taxi_zone_lookup_df)
+    rideshare_key = rideshare_data.map(get_join_key)
+    joined_df = rideshare_key.join(taxi_zone_lookup_df)
+    
+    my_bucket_resource = boto3.resource('s3',
+            endpoint_url='http://' + s3_endpoint_url,
+            aws_access_key_id=s3_access_key_id,
+            aws_secret_access_key=s3_secret_access_key)
+
+    my_result_object = my_bucket_resource.Object(s3_bucket,'taskone/b.txt')
+    my_result_object.put(Body=json.dumps(joined_df.collect()))
 
 
 
