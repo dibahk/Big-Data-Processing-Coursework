@@ -6,12 +6,11 @@ import operator
 import boto3
 import json
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
 from datetime import datetime
 from pyspark.sql.functions import from_unixtime, date_format
 from pyspark.sql.functions import to_date, count, col
 from graphframes import *
-
-
 
 if __name__ == "__main__":
 
@@ -46,16 +45,22 @@ if __name__ == "__main__":
     join_df = join_df.withColumnRenamed('Borough', 'Pickup_Borough')
     join_df = join_df.withColumnRenamed('Zone', 'Pickup_Zone')
     join_df = join_df.withColumnRenamed('service_zone', 'Pickup_service_zone')
-
+   
     # doing the second join on dropoff location
-    join_df = rideshare_df.join(taxi_zone_df, rideshare_df.dropoff_location==taxi_zone_df.LocationID, 'inner')
+    join_df = join_df.join(taxi_zone_df,join_df.dropoff_location==taxi_zone_df.LocationID, 'inner')
     join_df = join_df.drop('LocationID')
     join_df = join_df.withColumnRenamed('Borough', 'Dropoff_Borough')
     join_df = join_df.withColumnRenamed('Zone', 'Dropoff_Zone')
     join_df = join_df.withColumnRenamed('service_zone', 'Dropoff_service_zone')
     
+    # c
+    # join_df = join_df.withColumn(unix_timestamp("timestamp_col"), "yyyy-MM-dd").cast("date")
+    join_df = join_df.withColumn("date", from_unixtime(col("date")).cast("date"))
+    join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
+
     join_df.show()
-    
+    # row_count = join_df.rdd.count()
+    # print(f'The DataFrame has {row_count} rows.')
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
             aws_access_key_id=s3_access_key_id,
@@ -64,7 +69,4 @@ if __name__ == "__main__":
     my_result_object = my_bucket_resource.Object(s3_bucket,'taskone/b.txt')
     my_result_object.put(Body=json.dumps(join_df.collect()))
 
-
-
-    
     spark.stop()
