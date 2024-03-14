@@ -36,9 +36,10 @@ if __name__ == "__main__":
     # TASK 1
     # a
     # Loading data
-    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
+    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv",header=True)
     taxi_zone_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv", header=True)
     
+    # b
     # doing the first join on pickup location
     join_df = rideshare_df.join(taxi_zone_df, rideshare_df.pickup_location==taxi_zone_df.LocationID, 'inner')
     join_df = join_df.drop('LocationID')
@@ -59,8 +60,11 @@ if __name__ == "__main__":
     join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
 
     join_df.show()
-    # row_count = join_df.rdd.count()
-    # print(f'The DataFrame has {row_count} rows.')
+
+    # d
+    # printing the number of rows
+    row_count = join_df.count()
+    print(f'The DataFrame has {row_count} rows.')
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
             aws_access_key_id=s3_access_key_id,
