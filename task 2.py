@@ -68,13 +68,24 @@ if __name__ == "__main__":
     row_count = join_df.count()
     print(f'The DataFrame has {row_count} rows.')                                                                                      
                                                                                             
-    # TASK 2
-    # a
+    # TASK 2                                                                                                             
+    # 1
     # turning the dataframe file to rdd
     df = join_df.rdd
-    data = df.map(lambda x: ((x[0], x[9][5:7]), 1))
-    data = data.reduceByKey(add)                                                   
-    print(data.collect())                                                         
+    # mapping data to find the business and the month
+    data_1 = df.map(lambda x: ((x[0], x[9][5:7]), 1))
+    # reducing to find the number of occurences of the pair
+    data_1 = data_1.reduceByKey(add)                                                   
+    print(data_1.collect())   
+
+    # 2                                                                                                                                                    
+    # mapping data to find the rideshare profit
+    data_2 = df.map(lambda x: ((x[0],x[9][5:7]), int(x[12])))
+    # adding the rideshare profits of the occurences of business-month
+    data_2 = data_2.reduceByKey(add)
+    # reducing to find the number of occurences of the pair
+    data_2 = data_2.reduceByKey(add)   
+    print(data_2.collect())  
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -84,7 +95,10 @@ if __name__ == "__main__":
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskOne.txt')
     my_result_object.put(Body=json.dumps(join_df.take(100)))                  
                            
-    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo.txt')
-    my_result_object.put(Body=json.dumps(data.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_1.txt')
+    my_result_object.put(Body=json.dumps(data_1.collect()))
 
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_2.txt')
+    my_result_object.put(Body=json.dumps(data_2.collect()))
+                                                                                                                                       
     spark.stop() 
