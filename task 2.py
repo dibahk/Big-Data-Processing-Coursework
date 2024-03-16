@@ -35,13 +35,13 @@ if __name__ == "__main__":
     hadoopConf.set("fs.s3a.path.style.access", "true")
     hadoopConf.set("fs.s3a.connection.ssl.enabled", "false")
     # TASK 1
-    # a
+    # 1
     # Loading data
-    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
-    # rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv",header=True)
+    # rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
+    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv",header=True)
     taxi_zone_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv", header=True)
     
-    # b
+    # 2
     # doing the first join on pickup location
     join_df = rideshare_df.join(taxi_zone_df, rideshare_df.pickup_location==taxi_zone_df.LocationID, 'inner')
     join_df = join_df.drop('LocationID')
@@ -56,14 +56,14 @@ if __name__ == "__main__":
     join_df = join_df.withColumnRenamed('Zone', 'Dropoff_Zone')
     join_df = join_df.withColumnRenamed('service_zone', 'Dropoff_service_zone')
     
-    # c
+    # 3
     # join_df = join_df.withColumn(unix_timestamp("timestamp_col"), "yyyy-MM-dd").cast("date")
     join_df = join_df.withColumn("date", from_unixtime(col("date")).cast("date"))
     join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
                       
     join_df.show()                                                                                                                         
 
-    # d
+    # 4
     # printing the number of rows
     row_count = join_df.count()
     print(f'The DataFrame has {row_count} rows.')                                                                                      
@@ -86,6 +86,15 @@ if __name__ == "__main__":
     # reducing to find the number of occurences of the pair
     data_2 = data_2.reduceByKey(add)   
     print(data_2.collect())  
+
+    # 3                                                                                                                                                    
+    # mapping data to find the driver's earnings 
+    data_3 = df.map(lambda x: ((x[0],x[9][5:7]), float(x[11])))                                                                
+    # adding the rideshare profits of the occurences of business-month
+    data_3 = data_3.reduceByKey(add)
+    # reducing to find the number of occurences of the pair
+    data_3 = data_3.reduceByKey(add)   
+    print(data_3.collect()) 
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -100,6 +109,9 @@ if __name__ == "__main__":
 
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_2.txt')
     my_result_object.put(Body=json.dumps(data_2.collect()))
+
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_3.txt')
+    my_result_object.put(Body=json.dumps(data_3.collect()))
                                                                                                                                        
     spark.stop()                           
                       
