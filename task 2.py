@@ -80,7 +80,7 @@ if __name__ == "__main__":
 
     # 2                                                                                                                                                    
     # mapping data to find the rideshare profit
-    data_2 = df.map(lambda x: ((x[0],x[9][5:7]), int(x[12])))
+    data_2 = df.map(lambda x: ((x[0],x[9][5:7]), float(x[12])))                                                                
     # adding the rideshare profits of the occurences of business-month
     data_2 = data_2.reduceByKey(add)
     # reducing to find the number of occurences of the pair
@@ -101,4 +101,5 @@ if __name__ == "__main__":
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_2.txt')
     my_result_object.put(Body=json.dumps(data_2.collect()))
                                                                                                                                        
-    spark.stop() 
+    spark.stop()                           
+                      
