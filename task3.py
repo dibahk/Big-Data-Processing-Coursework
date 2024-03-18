@@ -72,10 +72,27 @@ if __name__ == "__main__":
     # 1
     # turning the dataframe file to rdd
     df = join_df.rdd
-    # mapping data to find the business and the month
+    # function for defining the schema because the key is like [[borough, month], count] and we want it to be [borough, month, count]
+    def explode_key(key_value):
+        key, value = key_value
+        print(key)
+        print(value)
+        return [key[0], key[1], value]
+
+    # mapping data to find the borough and the month
     data_1 = df.map(lambda x: ((x[15], x[9][5:7]), 1))
     # reducing to find the number of occurences of the pair
     data_1 = data_1.reduceByKey(add).sortBy(lambda x: x[1], ascending = False)
+    
+    # Apply the explode_key function to each element of the RDD using flatMap
+    exploded_rdd = data_1.map(explode_key)
+    df_1 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "Month", "trip_count"])
+    df_1.show() 
+
+    # 2
+    data_2 = df.map(lambda x: ((x[18], x[9][5:7]), 1))
+    # reducing to find the number of occurences of the pair
+    data_2 = data_2.reduceByKey(add).sortBy(lambda x: x[1], ascending = False)
     def explode_key(key_value):
         key, value = key_value
         print(key)
@@ -83,12 +100,10 @@ if __name__ == "__main__":
         return [key[0], key[1], value]
 
     # Apply the explode_key function to each element of the RDD using flatMap
-    exploded_rdd = data_1.map(explode_key)
+    exploded_rdd = data_2.map(explode_key)
     # Defining columns of the data frame
-    cols = ["Pickup_Borough", "Month", "trip_count"]
-    df_1 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "Month", "trip_count"])
-    df_1.show() 
-
+    df_2 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "Month", "trip_count"])
+    df_2.show() 
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -99,8 +114,8 @@ if __name__ == "__main__":
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_1.txt')
     my_result_object.put(Body=json.dumps(data_1.collect()))
 
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_2.txt')
-    # my_result_object.put(Body=json.dumps(data_2.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_2.txt')
+    my_result_object.put(Body=json.dumps(data_2.collect()))
 
     # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskTwo_3.txt')
     # my_result_object.put(Body=json.dumps(data_3.collect()))
