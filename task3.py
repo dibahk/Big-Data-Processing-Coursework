@@ -37,8 +37,8 @@ if __name__ == "__main__":
     # TASK 1
     # 1
     # Loading data
-    # rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
-    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv",header=True)
+    rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
+    # rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv",header=True)
     taxi_zone_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv", header=True)
     
     # 2
@@ -61,14 +61,14 @@ if __name__ == "__main__":
     join_df = join_df.withColumn("date", from_unixtime(col("date")).cast("date"))
     join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
                       
-    join_df.show()                                                                                                                         
+    # join_df.show()                                                                                                                         
 
-    # 4
+    # 4                                                                                                        
     # printing the number of rows
     row_count = join_df.count()
     print(f'The DataFrame has {row_count} rows.')                                                                                      
                                                                                             
-    # TASK                                                                                                              
+    # TASK 3
     # 1
     # turning the dataframe file to rdd
     df = join_df.rdd
@@ -76,17 +76,25 @@ if __name__ == "__main__":
     data_1 = df.map(lambda x: ((x[15], x[9][5:7]), 1))
     # reducing to find the number of occurences of the pair
     data_1 = data_1.reduceByKey(add).sortBy(lambda x: x[1], ascending = False)
-    print(data_1.collect())   
+    def explode_key(key_value):
+        key, value = key_value
+        print(key)
+        print(value)
+        return [key[0], key[1], value]
 
-    # 2                                                                                                                                                    
-    
+    # Apply the explode_key function to each element of the RDD using flatMap
+    exploded_rdd = data_1.map(explode_key)
+    # Defining columns of the data frame
+    cols = ["Pickup_Borough", "Month", "trip_count"]
+    df_1 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "Month", "trip_count"])
+    df_1.show() 
+
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
             aws_access_key_id=s3_access_key_id,
             aws_secret_access_key=s3_secret_access_key)
-
-                   
+                 
                            
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_1.txt')
     my_result_object.put(Body=json.dumps(data_1.collect()))
