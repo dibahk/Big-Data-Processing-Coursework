@@ -62,51 +62,22 @@ if __name__ == "__main__":
     join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
                                                                                                          
                                                                                             
-    # TASK 4
+    # TASK 5
+    # first we filter the data frame to rides which happened in January
+    # The condition uses the month function from pyspark.sql.functions to extract the month number from the "date" column.
+    df = join_df.filter(month(col("date")) == 1)
     # turning the dataframe file to rdd
-    df = join_df.rdd
-    # 1
+    df = df.rdd
     # extracting time of the day and driver_total_pay because these are the columns that we want to analyse
-    data_1 = df.map(lambda x: (x[8], float(x[11])))
+    data_1 = df.map(lambda x: (int(x[9][8:]), float(x[4])))
     # since we need the average I am also going to employ another map on the values precisely to also add a column of 1 as a way to count the values in each key
     data_1 = data_1.mapValues(lambda x:(x, 1))
     # reducing the RDD by summing the driver_total_pay and counting instances of each key
     data_1 = data_1.reduceByKey(lambda x,y :(x[0]+y[0],x[1]+y[1]))
     # divinding the summation of driver_total_pay and counts of each key to calculate average
-    averages_1 = data_1.mapValues(lambda x : x[0]/x[1])
-    # creating the dataframe with the required column names
-    df_1 = spark.createDataFrame(averages_1, ["time_of_day", "average_drive_total_pay"])
-    # showing the dataframe in the terminal and sorting it as required
-    df_1.sort(desc("average_drive_total_pay")).show(df_1.count(), truncate = False)
-
-    # 2
-    # extracting time of the day and trip_length because these are the columns that we want to analyse
-    data_2 = df.map(lambda x: (x[8], float(x[3])))
-    # since we need the average I am also going to employ another map on the values precisely to also add a column of 1 as a way to count the values in each key
-    data_2 = data_2.mapValues(lambda x:(x, 1))
-    # reducing the RDD by summing the trip_length and counting instances of each key
-    data_2 = data_2.reduceByKey(lambda x,y :(x[0]+y[0],x[1]+y[1]))
-    # divinding the summation of trip_length and counts of each key to calculate average
-    averages_2 = data_2.mapValues(lambda x : x[0]/x[1])
-    # creating the dataframe with the required column names
-    df_2 = spark.createDataFrame(averages_2, ["time_of_day_2", "average_trip_length"])
-    # showing the dataframe in the terminal and sorting it as required
-    df_2.sort(desc("average_trip_length")).show(df_2.count(), truncate = False)
-
-    # 3
-    # Combining the average driver total pay data frame with the average trip length
-    # dataframe based on the time of the day to be able to do required calculations on them
-    # the joining is done on their time of day feature however, in order to differentiate between the two data frames the time of day column in the second data frame has been renamed.
-    df_3 = df_1.join(df_2, df_1.time_of_day == df_2.time_of_day_2, 'inner')
-    # in the results we have two time of day columns therefore we delete one of them
-    df_3 = df_3.drop('time_of_day_2')
-    # adding a new column to the dataframe for the average earning per mile where we divided the average driver_total_pay for each time of day by average trip length
-    df_3 = df_3.withColumn('average_earning_per_mile', df_3['average_drive_total_pay'] / \
-                           df_3['average_trip_length'])
-    # dropping the inital columns of data which we used for division
-    df_3 = df_3.drop('average_drive_total_pay')
-    df_3 = df_3.drop('average_trip_length')
-    df_3.show()
+    averages_1 = data_1.mapValues(lambda x : x[0]/x[1]).sortBy(lambda x: x[0])
+    
+    
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -114,11 +85,11 @@ if __name__ == "__main__":
             aws_secret_access_key=s3_secret_access_key)
                  
                            
-    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_1.txt')
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskFive_1.txt')
     my_result_object.put(Body=json.dumps(averages_1.collect()))
 
-    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_2.txt')
-    my_result_object.put(Body=json.dumps(data_2.collect()))
+    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_2.txt')
+    # my_result_object.put(Body=json.dumps(data_2.collect()))
 
     # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_3.txt')
     # my_result_object.put(Body=json.dumps(data_3.collect()))
