@@ -62,14 +62,14 @@ if __name__ == "__main__":
     join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
                                                                                                          
                                                                                             
-    # TASK 3
+    # TASK 4
     # 1
     # turning the dataframe file to rdd
     df = join_df.rdd
     data_1 = df.map(lambda x: (x[8], float(x[11])))
-    data_1 = df.mapValues(lambda x:(x, 1))
-    data_1 = data_1.reduceByKey(lambda x,y :(x[1]+y[1],x[2]+y[2]))
-    averages_1 = mappedFinal.mapValues(lambda x : x[0]/x[1])
+    data_1 = data_1.mapValues(lambda x:(x, 1))
+    data_1 = data_1.reduceByKey(lambda x,y :(x[0]+y[0],x[1]+y[1]))
+    averages_1 = data_1.mapValues(lambda x : x[0]/x[1])
     df_1 = spark.createDataFrame(averages_1, ["time_of_day", "average_drive_total_pay"])
     df_1.sort(desc("average_drive_total_pay")).show(df_1.count(), truncate = False)
     
