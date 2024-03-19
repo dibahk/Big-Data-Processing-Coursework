@@ -63,6 +63,7 @@ if __name__ == "__main__":
                                                                                                          
                                                                                             
     # TASK 5
+    # 1
     # first we filter the data frame to rides which happened in January
     # The condition uses the month function from pyspark.sql.functions to extract the month number from the "date" column.
     df = join_df.filter(month(col("date")) == 1)
@@ -77,7 +78,13 @@ if __name__ == "__main__":
     # divinding the summation of driver_total_pay and counts of each key to calculate average
     averages_1 = data_1.mapValues(lambda x : x[0]/x[1]).sortBy(lambda x: x[0])
     
-    
+    # 2
+    # filtering to get the days where the average waiting time was more than 300
+    averages_2 = averages_1.filter(lambda x: x[1] > 300)
+    # in order to view the result in a better format in the terminal the result was changed into a data frame
+    data_2 = spark.createDataFrame(averages_2, ['day', 'average waiting time'])
+    # showing all the the days
+    data_2.show(data_2.count(), truncate= False)
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -88,11 +95,9 @@ if __name__ == "__main__":
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskFive_1.txt')
     my_result_object.put(Body=json.dumps(averages_1.collect()))
 
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_2.txt')
-    # my_result_object.put(Body=json.dumps(data_2.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_2.txt')
+    my_result_object.put(Body=json.dumps(averages_2.collect()))
 
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_3.txt')
-    # my_result_object.put(Body=json.dumps(data_3.collect()))
                                                                                                                                        
     spark.stop()                           
                       
