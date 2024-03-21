@@ -79,17 +79,23 @@ if __name__ == "__main__":
     # Apply the route function to each element of the RDD using flatMap
     exploded_rdd = data_1.map(route)
     df_1 = spark.createDataFrame(exploded_rdd, ["Route", "uber_count"])
-    
+
+    # mapping and filtering data to find routes which use Lyft
     data_2 = df.map(lambda x: ((x[15], x[18], x[0]), 1)).filter(lambda x: x[0][2] == 'Lyft')
     # reducing to find the number of occurences of the pair
     data_2 = data_2.reduceByKey(add)
     # Apply the route function to each element of the RDD using flatMap
     exploded_rdd = data_2.map(route)
+    # Creating the Lyft using dataframe
     df_2 = spark.createDataFrame(exploded_rdd, ["Route_2", "lyft_count"])
+    # joining uber and lyft dataframes
     join_df = df_1.join(df_2, df_1.Route == df_2.Route_2, 'inner')
+    # getting rid of the extra column
     join_df = join_df.drop('Route_2')
+    # creating the total count of rides for each route  by summing the uber_count and lyft_count columns
     join_df = join_df.withColumn('total_count', join_df["uber_count"] + join_df["lyft_count"])
-    join_df.show(truncate= False) 
+    # showing the final dataframe in the terminal
+    join_df.show(join_df.count(), truncate= False) 
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -99,7 +105,6 @@ if __name__ == "__main__":
                            
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSeven_1.txt')
     my_result_object.put(Body=json.dumps(join_df.collect()))
- 
                                                                                                                                        
     spark.stop()                           
                       
