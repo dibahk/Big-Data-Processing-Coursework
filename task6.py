@@ -70,35 +70,38 @@ if __name__ == "__main__":
         key, value = key_value
         return [key[0], key[1], value]
 
-    # mapping data to find the borough and the month
-    # data_1 = df.map(lambda x: ((x[15], x[8]), 1))
-    # # reducing to find the number of occurences of the pair
-    # data_1 = data_1.reduceByKey(add)
-    # data_1 = data_1.filter(lambda x: x[1] > 0 and x[1] < 1000)
-    # # Apply the explode_key function to each element of the RDD using flatMap
-    # exploded_rdd = data_1.map(explode_key)
-    # df_1 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "time_of_day", "trip_count"])
-    # df_1.show(df_1.count(), truncate = False)
+    # mapping data to find the borough and the time of the day
+    data_1 = df.map(lambda x: ((x[15], x[8]), 1))
+    # reducing to find the number of occurences of the pair
+    data_1 = data_1.reduceByKey(add)
+    data_1 = data_1.filter(lambda x: x[1] > 0 and x[1] < 1000)
+    # Apply the explode_key function to each element of the RDD using flatMap
+    exploded_rdd = data_1.map(explode_key)
+    df_1 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "time_of_day", "trip_count"])
+    df_1.show(df_1.count(), truncate = False)
 
     # 2
+    # mapping data to find the borough and the time of the day
     data_2 = df.map(lambda x: ((x[15], x[8]), 1))
     # reducing to find the number of occurences of the pair
     data_2 = data_2.reduceByKey(add)
+    # filtering to find the occurences which happen in the evening
     data_2 = data_2.filter(lambda x: x[0][1] == 'evening')
     # Apply the explode_key function to each element of the RDD using flatMap
     exploded_rdd = data_2.map(explode_key)
     df_2 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "time_of_day", "trip_count"])
     df_2.show(df_2.count(), truncate = False)
 
-    # # 3
-    # # defining the schema of the dataframe
-    # data_3 = df.map(lambda x: (x[15], x[18], x[16]))
-    # # reducing to find the number of occurences of the pair
-    # data_2 = data_2.filter(lambda x: x[0] == 'Brooklyn' and x[1] == 'Staten Island')
-    # # Turning the RDD to data frame to better show it in the terminal
-    # df_2 = spark.createDataFrame(exploded_rdd, ["Pickup_Borough", "Dropoff_Borough", "Pickup_Zone"])
-    # df_2.show(10, truncate = False)
-    # print("the number of trips from Brooklyn to Staten Island is {}".format(df_2.count())
+    # 3
+    # mapping data to find the boroughs
+    data_3 = df.map(lambda x: (x[15], x[18], x[16]))
+    # filtering to find the number of occurences of the pair
+    data_3 = data_3.filter(lambda x: x[0] == 'Brooklyn' and x[1] == 'Staten Island')
+    # Turning the RDD to data frame to better show it in the terminal
+    df_3 = spark.createDataFrame(data_3, ["Pickup_Borough", "Dropoff_Borough", "Pickup_Zone"])
+    df_3.show(10, truncate = False)
+    # printing the number of occurences
+    print("the number of trips from Brooklyn to Staten Island is {}".format(df_3.count()))
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -106,14 +109,14 @@ if __name__ == "__main__":
             aws_secret_access_key=s3_secret_access_key)
                  
                            
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSix_1.txt')
-    # my_result_object.put(Body=json.dumps(data_1.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSix_1.txt')
+    my_result_object.put(Body=json.dumps(data_1.collect()))
 
     my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSix_2.txt')
     my_result_object.put(Body=json.dumps(data_2.collect()))
 
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSix_3.txt')
-    # my_result_object.put(Body=json.dumps(data_3.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSix_3.txt')
+    my_result_object.put(Body=json.dumps(data_3.collect()))
                                                                                                                                        
     spark.stop()                           
                       
