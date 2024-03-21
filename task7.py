@@ -71,14 +71,25 @@ if __name__ == "__main__":
         key, value = key_value
         route = '{} to {}'.format(key[0], key[1])
         return [route, value]
-        
-    data_1 = df.map(lambda x: ((x[15], x[18], x[0]), 1))
+
+    # mapping and filtering data to find routes which use Uber
+    data_1 = df.map(lambda x: ((x[15], x[18], x[0]), 1)).filter(lambda x: x[0][2] == 'Uber')
     # reducing to find the number of occurences of the pair
-    data_3 = data_3.reduceByKey(add).sortBy(lambda x: x[1], ascending = False)
+    data_1 = data_1.reduceByKey(add)
     # Apply the route function to each element of the RDD using flatMap
-    exploded_rdd = data_3.map(route)
-    df_3 = spark.createDataFrame(exploded_rdd, ["Route", "total_profit"])
-    df_3.show(truncate= False) 
+    exploded_rdd = data_1.map(route)
+    df_1 = spark.createDataFrame(exploded_rdd, ["Route", "uber_count"])
+    
+    data_2 = df.map(lambda x: ((x[15], x[18], x[0]), 1)).filter(lambda x: x[0][2] == 'Lyft')
+    # reducing to find the number of occurences of the pair
+    data_2 = data_2.reduceByKey(add)
+    # Apply the route function to each element of the RDD using flatMap
+    exploded_rdd = data_2.map(route)
+    df_2 = spark.createDataFrame(exploded_rdd, ["Route_2", "lyft_count"])
+    join_df = df_1.join(df_2, df_1.Route == df_2.Route_2, 'inner')
+    join_df = join_df.drop('Route_2')
+    join_df = join_df.withColumn('total_count', join_df["uber_count"] + join_df["lyft_count"])
+    join_df.show(truncate= False) 
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
@@ -86,14 +97,9 @@ if __name__ == "__main__":
             aws_secret_access_key=s3_secret_access_key)
                  
                            
-    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_1.txt')
-    my_result_object.put(Body=json.dumps(df_1.show()))
-
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_2.txt')
-    # my_result_object.put(Body=json.dumps(data_2.collect()))
-
-    # my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskThree_3.txt')
-    # my_result_object.put(Body=json.dumps(data_3.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskSeven_1.txt')
+    my_result_object.put(Body=json.dumps(join_df.collect()))
+ 
                                                                                                                                        
     spark.stop()                           
                       
