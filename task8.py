@@ -45,20 +45,32 @@ if __name__ == "__main__":
                                StructField("Zone", StringType(), True),
                                StructField("service_zone", StringType(), True)])
 
-    edgeSchema = StructType([StructField("src", IntegerType(), False),
+    edgeSchema = StructType([StructField('bus', StringType(), False),
+                             StructField("src", IntegerType(), False),
                                StructField("dst", IntegerType(), False)])
-
+    
     # reading from dataset to load edges and vertices data respectivily
     edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv")
     # edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv")
     verticesDF = spark.read.format("csv").options(header='True').schema(vertexSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv")
-
+    edgesDF = edgesDF.drop('bus')
     # showing 10 rows from the vertices and edges tables
     verticesDF.show(10, truncate= False)
     edgesDF.show(10, truncate= False)
 
+    # c
     # Now create a graph using the vertices and edges
     graph = GraphFrame(verticesDF, edgesDF)
 
     # Now print the graph using the show() command on "triplets" properties which return DataFrame with columns ‘src’, ‘edge’, and ‘dst’
-    graph.triplets.show(3, truncate=False)
+    graph.triplets.show(10, truncate=False)
+
+    # d
+    same_zones = graph.find("(a)-[]->(b)").filter("a.Borough = b.Borough").filter("a.service_zone = b.service_zone")
+    print ("count: %d" % same_zones.count())
+    
+    selected = same_zones.select("a.id", "b.id", "a.Borough", "a.service_zone")
+    selected.show(10, truncate=False)
+
+    page_rank = graph.pageRank(resetProbability=0.17, tol=0.01).vertices.sort('pagerank', ascending=False)
+    page_rank.select("id", "pagerank").show(5, truncate=False)
