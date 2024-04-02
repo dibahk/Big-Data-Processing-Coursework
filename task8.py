@@ -39,7 +39,8 @@ if __name__ == "__main__":
     hadoopConf.set("fs.s3a.path.style.access", "true")
     hadoopConf.set("fs.s3a.connection.ssl.enabled", "false")
 
-    # GraphFrames will expect to have our key named as 'id'
+    # 1
+    # creating a the graph using StructType and defining the required columns
     vertexSchema = StructType([StructField("id", IntegerType(), False),
                                StructField("Borough", StringType(), True),
                                StructField("Zone", StringType(), True),
@@ -49,28 +50,32 @@ if __name__ == "__main__":
                              StructField("src", IntegerType(), False),
                                StructField("dst", IntegerType(), False)])
     
+    # 2
     # reading from dataset to load edges and vertices data respectivily
     edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv")
     # edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv")
     verticesDF = spark.read.format("csv").options(header='True').schema(vertexSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv")
+    # dropping the extra column from the edges column
     edgesDF = edgesDF.drop('bus')
     # showing 10 rows from the vertices and edges tables
     verticesDF.show(10, truncate= False)
     edgesDF.show(10, truncate= False)
 
-    # c
+    # 3
     # Now create a graph using the vertices and edges
     graph = GraphFrame(verticesDF, edgesDF)
 
     # Now print the graph using the show() command on "triplets" properties which return DataFrame with columns ‘src’, ‘edge’, and ‘dst’
     graph.triplets.show(10, truncate=False)
 
-    # d
+    # 4
     same_zones = graph.find("(a)-[]->(b)").filter("a.Borough = b.Borough").filter("a.service_zone = b.service_zone")
     print ("count: %d" % same_zones.count())
-    
+    # selecting the columns from the filtered rows
     selected = same_zones.select("a.id", "b.id", "a.Borough", "a.service_zone")
+    # showing data
     selected.show(10, truncate=False)
 
+    # 5
     page_rank = graph.pageRank(resetProbability=0.17, tol=0.01).vertices.sort('pagerank', ascending=False)
     page_rank.select("id", "pagerank").show(5, truncate=False)
