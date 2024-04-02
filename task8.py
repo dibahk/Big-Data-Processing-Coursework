@@ -41,19 +41,24 @@ if __name__ == "__main__":
 
     # GraphFrames will expect to have our key named as 'id'
     vertexSchema = StructType([StructField("id", IntegerType(), False),
-                               StructField("birthday", IntegerType(), True),
-                               StructField("hometown_id", IntegerType(), True),
-                               StructField("work_employer_id", IntegerType(), True),
-                               StructField("education_school_id", IntegerType(), True),
-                               StructField("education_year_id", IntegerType(), True)])
+                               StructField("Borough", StringType(), True),
+                               StructField("Zone", StringType(), True),
+                               StructField("service_zone", StringType(), True)])
 
     edgeSchema = StructType([StructField("src", IntegerType(), False),
                                StructField("dst", IntegerType(), False)])
 
     # reading from dataset to load edges and vertices data respectivily
-    edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/graph/stanford_fb_edges.csv")
-    verticesDF = spark.read.format("csv").options(header='True').schema(vertexSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/graph/stanford_fb_vertices.csv")
+    edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv")
+    # edgesDF = spark.read.format("csv").options(header='True').schema(edgeSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv")
+    verticesDF = spark.read.format("csv").options(header='True').schema(vertexSchema).csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv")
 
     # showing 10 rows from the vertices and edges tables
-    verticesDF.show(10)
-    edgesDF.show(10)
+    verticesDF.show(10, truncate= False)
+    edgesDF.show(10, truncate= False)
+
+    # Now create a graph using the vertices and edges
+    graph = GraphFrame(verticesDF, edgesDF)
+
+    # Now print the graph using the show() command on "triplets" properties which return DataFrame with columns ‘src’, ‘edge’, and ‘dst’
+    graph.triplets.show(3, truncate=False)
