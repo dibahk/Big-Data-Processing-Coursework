@@ -95,7 +95,7 @@ if __name__ == "__main__":
     # creating the total count of rides for each route  by summing the uber_count and lyft_count columns
     join_df = join_df.withColumn('total_count', join_df["uber_count"] + join_df["lyft_count"])
     # showing the final dataframe in the terminal
-    join_df.show(join_df.count(), truncate= False) 
+    join_df.sort(desc("total_count")).show(10, truncate = False)
     
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
