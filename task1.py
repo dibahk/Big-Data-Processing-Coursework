@@ -11,6 +11,7 @@ from datetime import datetime
 from pyspark.sql.functions import from_unixtime, date_format
 from pyspark.sql.functions import to_date, count, col
 from graphframes import *
+from operator import add
 
 if __name__ == "__main__":
 
@@ -36,6 +37,7 @@ if __name__ == "__main__":
     # TASK 1
     # a
     # Loading data
+    # rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/sample_data.csv",header=True)
     rideshare_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/rideshare_data.csv",header=True)
     taxi_zone_df = spark.read.csv("s3a://" + s3_data_repository_bucket + "/ECS765/rideshare_2023/taxi_zone_lookup.csv", header=True)
     
@@ -59,18 +61,25 @@ if __name__ == "__main__":
     join_df = join_df.withColumn("date", from_unixtime(col("date")).cast("date"))
     join_df = join_df.withColumn("date", date_format(col("date"), "yyyy-MM-dd"))
 
-    join_df.show()
+    join_df.show(truncate = False)
 
     # d
     # printing the number of rows
     row_count = join_df.count()
     print(f'The DataFrame has {row_count} rows.')
+    # printing schema
+    join_df.printSchema()
+                                                                                                                                                  
+    
     my_bucket_resource = boto3.resource('s3',
             endpoint_url='http://' + s3_endpoint_url,
             aws_access_key_id=s3_access_key_id,
             aws_secret_access_key=s3_secret_access_key)
 
-    my_result_object = my_bucket_resource.Object(s3_bucket,'taskone/b.txt')
-    my_result_object.put(Body=json.dumps(join_df.collect()))
+    my_result_object = my_bucket_resource.Object(s3_bucket,'Result/taskOne_1.txt')
+    my_result_object.put(Body=json.dumps(join_df.take(100)))
+
 
     spark.stop()
+
+
