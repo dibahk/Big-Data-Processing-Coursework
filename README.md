@@ -51,26 +51,26 @@ The dataset is provided under the path `//data-repository-bkt/ECS765/rideshare_2
 - Calculate driver earnings per business per month.
 - Provide insights from the results.
 
-### Task 3: Top-K Processing (25 points)
+### Task 3: Top-K Processing 
 - Identify the top 5 popular pickup and dropoff boroughs each month.
 - Identify the top 30 earning routes.
 
-### Task 4: Average of Data (15 points)
+### Task 4: Average of Data
 - Calculate the average driver pay and trip length for different times of the day.
 - Calculate average earnings per mile for different times of the day.
 
-### Task 5: Finding Anomalies (15 points)
+### Task 5: Finding Anomalies
 - Calculate average waiting time in January.
 - Identify and analyze days with waiting time exceeding 300 seconds.
 
-### Task 6: Filtering Data (15 points)
+### Task 6: Filtering Data
 - Find trip counts within a specified range for different pickup boroughs and times of day.
 - Calculate trips in the evening time and trips from Brooklyn to Staten Island.
 
-### Task 7: Routes Analysis (15 points)
+### Task 7: Routes Analysis
 - Analyze the top 10 popular routes based on trip count.
 
-### Optional Task 8: Graph Processing (20 points)
+### Optional Task 8: Graph Processing
 - Define vertex and edge schemas and construct dataframes.
 
 
